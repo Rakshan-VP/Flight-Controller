@@ -5,14 +5,14 @@ import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QTextEdit, QLineEdit, QFrame
-    , QGraphicsProxyWidget
+    , QGraphicsProxyWidget, QScrollArea
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIcon
 import pyqtgraph as pg
 
 
-# ----------------- STYLES -----------------
+## ----------------- STYLES -----------------
 
 def red_border(widget, radius=10):
     widget.setStyleSheet(f"""
@@ -68,7 +68,6 @@ def plot_border(plot):
         }
     """)
 
-from PyQt5.QtWidgets import QPushButton, QGraphicsProxyWidget
 
 def add_autoscale_button(plot):
     btn = QPushButton("AUTO")
@@ -332,8 +331,6 @@ def create_bottom_left():
     return frame, row1, row2
 
 
-from PyQt5.QtWidgets import QScrollArea
-
 def create_bottom_right():
     frame = QFrame()
     red_border(frame)
@@ -407,15 +404,25 @@ def create_bottom_right():
     # Command templates (label → text inserted)
     command_templates = {
         "GOTO": "goto __m",
-        "RTL": "rtl",
+        "MOVE": "move x y z",
+
+        "HOLD": "hold",
+        "HOLD FOR": "hold __s",
+
+        "STOP": "stop",
+
         "TAKEOFF": "takeoff __m",
         "LAND": "land",
-        "HOLD": "hold",
-        "MODE GUIDED": "mode guided",
-        "MODE AUTO": "mode auto",
-        "MODE LOITER": "mode loiter",
+        "EMERGENCY LAND": "eland",
+
         "ARM": "arm",
         "DISARM": "disarm",
+        "STATUS": "status",
+
+        "MISSION START": "mission start",
+        "MISSION PAUSE": "mission pause",
+        "MISSION RESUME": "mission resume",
+        "MISSION ABORT": "mission abort",
     }
 
     def make_cmd_button(label, text):
