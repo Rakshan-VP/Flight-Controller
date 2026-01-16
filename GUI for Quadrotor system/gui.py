@@ -68,7 +68,6 @@ def plot_border(plot):
         }
     """)
 
-
 def add_autoscale_button(plot):
     btn = QPushButton("AUTO")
     btn.setCheckable(True)
