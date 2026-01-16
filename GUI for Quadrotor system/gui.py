@@ -1,4 +1,6 @@
 import sys
+import socket
+import time
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
@@ -112,6 +114,38 @@ def add_autoscale_button(plot):
     btn.toggled.connect(toggle_autoscale)
 
     return btn
+
+
+# ----------------- HELPER FUNCTIONS -----------------
+
+def start_esp32_connection_monitor(status_label, esp32_ip="192.168.4.1", interval_ms=1000):
+    timer = QTimer()
+
+    def check_connection():
+        connected = False
+        try:
+            sock = socket.create_connection((esp32_ip, 80), timeout=0.5)
+            sock.close()
+            connected = True
+        except Exception:
+            connected = False
+
+        if connected:
+            status_label.setText("● CONNECTED")
+            status_label.setStyleSheet(
+                "color: #00ff66; font-weight: bold; padding-left: 20px;"
+            )
+        else:
+            status_label.setText("● DISCONNECTED")
+            status_label.setStyleSheet(
+                "color: red; font-weight: bold; padding-left: 20px;"
+            )
+
+    timer.timeout.connect(check_connection)
+    timer.start(interval_ms)
+
+    return timer
+
 
 # ----------------- TOP PANEL -----------------
 
@@ -442,6 +476,8 @@ def main():
     layout = QVBoxLayout(window)
 
     top, status = create_top_panel()
+    conn_timer = start_esp32_connection_monitor(status)
+    
     mid, rp_plot, yaw_plot, map_plot, pwm_plot, alt_plot = create_mid_panel()
     bottom, col1, col2, output, cmd = create_bottom_panel()
 
