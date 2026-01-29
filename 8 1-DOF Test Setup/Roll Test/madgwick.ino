@@ -12,8 +12,8 @@ const float baseThrottle = 1300.0;
 const float minThrottle  = 1170.0;
 const float maxThrottle  = 1430.0;
 
-float Kp = 14.5;
-float Ki = 0.08;
+float Kp = 15;
+float Ki = 0.05;
 float Kd = 0.7;
 
 float roll = 0.0;
