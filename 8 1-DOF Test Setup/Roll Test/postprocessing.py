@@ -1,92 +1,52 @@
-# Values from both the sensors are matched by time stamping
-# Done with almost same initial angle so that we can properly compare the results
-# Test done for almost same time period
-# PID gain values is almost constant so that the we can compare the performance of the filters properly. 
-
-from openpyxl import load_workbook
+import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 
-def read_excel_columns(filename):
-    wb = load_workbook(filename, data_only=True)
-    ws = wb.active
+# Locate the file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(base_dir, 'sensor_data_09_02_2026.csv')
 
-    headers = [cell.value for cell in ws[1]]
-    data = {h: [] for h in headers}
+if not os.path.exists(file_path):
+    print("Error: CSV file not found")
+else:
+    df = pd.read_csv(file_path)
+    samples = np.arange(len(df))
+    time = np.linspace(0, 15.5, len(df))
 
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        for h, v in zip(headers, row):
-            data[h].append(v)
+    # Error Calculations
+    comp_error = np.abs(df['roll_xsens'] - df['roll_comp'])
+    madgwick_error = np.abs(df['roll_xsens'] - df['roll_madgwick'])
 
-    return data
+    # Plotting
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 12), sharex=False)
+    plt.subplots_adjust(hspace=0.4)
 
+    # Plot 1: Main Roll Comparison
+    ax1.plot(samples, df['roll_xsens'], label='Xsens (Ref)', color='gray', alpha=0.5)
+    ax1.plot(samples, df['roll_comp'], label='Comp Filter', color='blue', lw=2)
+    ax1.plot(samples, df['roll_madgwick'], label='Madgwick', color='red', lw=2)
+    ax1.set_title('Roll Comparison: Step Response & Oscillations')
+    ax1.set_ylabel('Degrees')
+    ax1.legend()
+    ax1.grid(True)
 
-# ===== Get directory of this script =====
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # Plot 2: Absolute Comp Error
+    ax2.fill_between(samples, comp_error, color='blue', alpha=0.2)
+    ax2.plot(samples, comp_error, color='blue', lw=1)
+    ax2.set_title('Complementary Filter Absolute Error')
+    ax2.set_ylabel('Error (deg)')
+    ax2.grid(True)
 
-comp_file = os.path.join(
-    BASE_DIR,
-    "roll_pid_experiment_comp.xlsx"
-)
+    # Plot 3: Madgwick Error vs Time
+    ax3.plot(time, madgwick_error, color='red', lw=1)
+    ax3.set_title('Madgwick Error vs Time')
+    ax3.set_xlabel('Time (seconds)')
+    ax3.set_ylabel('Error (deg)')
+    ax3.grid(True)
 
-madg_file = os.path.join(
-    BASE_DIR,
-    "roll_pid_experiment_madgwick.xlsx"
-)
-
-print("Loading:")
-print(comp_file)
-print(madg_file)
-
-# ===== Load data =====
-comp = read_excel_columns(comp_file)
-madg = read_excel_columns(madg_file)
-
-t_comp = range(len(comp["xsens_roll"]))
-t_madg = range(len(madg["xsens_roll"]))
-
-# ===== 2x2 PLOTS =====
-fig, axs = plt.subplots(2, 2, figsize=(14, 10))
-
-# ---- Plot 1: XSens vs Roll (Complementary) ----
-axs[0, 0].plot(t_comp, comp["xsens_roll"], label="XSens", alpha=0.6)
-axs[0, 0].plot(t_comp, comp["roll_comp"], label="Roll Comp", linewidth=2)
-axs[0, 0].set_title("Complementary Filter Roll")
-axs[0, 0].set_xlabel("Sample Index")
-axs[0, 0].set_ylabel("Roll (deg)")
-axs[0, 0].grid(True)
-axs[0, 0].legend()
-
-# ---- Plot 2: XSens vs Roll (Madgwick) ----
-axs[0, 1].plot(t_madg, madg["xsens_roll"], label="XSens", alpha=0.6)
-axs[0, 1].plot(t_madg, madg["roll_madgwick"], label="Roll Madgwick", linewidth=2)
-axs[0, 1].set_title("Madgwick Filter Roll")
-axs[0, 1].set_xlabel("Sample Index")
-axs[0, 1].set_ylabel("Roll (deg)")
-axs[0, 1].grid(True)
-axs[0, 1].legend()
-
-# ---- Plot 3: Motor PWMs (Complementary) ----
-axs[1, 0].plot(t_comp, comp["left_front(25)"], label="LF 25")
-axs[1, 0].plot(t_comp, comp["left_back(33)"], label="LB 33")
-axs[1, 0].plot(t_comp, comp["right_front(32)"], label="RF 32")
-axs[1, 0].plot(t_comp, comp["right_back(26)"], label="RB 26")
-axs[1, 0].set_title("Motor Outputs (Comp)")
-axs[1, 0].set_xlabel("Sample Index")
-axs[1, 0].set_ylabel("PWM (µs)")
-axs[1, 0].grid(True)
-axs[1, 0].legend(ncol=2)
-
-# ---- Plot 4: Motor PWMs (Madgwick) ----
-axs[1, 1].plot(t_madg, madg["left_front(25)"], label="LF 25")
-axs[1, 1].plot(t_madg, madg["left_back(33)"], label="LB 33")
-axs[1, 1].plot(t_madg, madg["right_front(32)"], label="RF 32")
-axs[1, 1].plot(t_madg, madg["right_back(26)"], label="RB 26")
-axs[1, 1].set_title("Motor Outputs (Madgwick)")
-axs[1, 1].set_xlabel("Sample Index")
-axs[1, 1].set_ylabel("PWM (µs)")
-axs[1, 1].grid(True)
-axs[1, 1].legend(ncol=2)
-
-plt.tight_layout()
-plt.show()
+    # Save the plot to the base directory
+    plot_path = os.path.join(base_dir, 'sensor_analysis.png')
+    plt.savefig(plot_path)
+    plt.show()
+    print(f"Plot saved at: {plot_path}")

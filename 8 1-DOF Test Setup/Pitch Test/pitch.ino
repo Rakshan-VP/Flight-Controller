@@ -12,19 +12,26 @@ const float baseThrottle = 1300.0;
 const float minThrottle  = 1170.0;
 const float maxThrottle  = 1430.0;
 
-float Kp = 15;
-float Ki = 0.05;
-float Kd = 0.7;
+float Kp = 18.4;
+float Ki = 0.08;
+float Kd = 0.9;
 
-float roll = 0.0;
+const float alpha = 0.98;
+
+float pitchComp = 0.0;
+float pitchMadgwick = 0.0;
+
 float lastError = 0.0;
+float pidI = 0.0;
+
 unsigned long lastTime;
 
-float leftPWM  = 1200.0;
-float rightPWM = 1200.0;
+float frontPWM  = 1200.0;
+float backPWM   = 1200.0;
 
+// Madgwick variables
 float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
-float beta = 0.08f;
+float beta = 0.46f;
 
 uint32_t usToDuty(uint32_t us) {
   return (uint32_t)((us * 65535UL) / 20000UL);
@@ -35,14 +42,14 @@ void setMotor(int ch, float us) {
   ledcWrite(ch, usToDuty((uint32_t)us));
 }
 
-void writeMotors(float left, float right) {
-  leftPWM  = left;
-  rightPWM = right;
+void writeMotors(float front, float back) {
+  frontPWM = front;
+  backPWM  = back;
 
-  setMotor(0, left);
-  setMotor(1, right);
-  setMotor(2, right);
-  setMotor(3, left);
+  setMotor(0, front);
+  setMotor(1, front);
+  setMotor(2, back);
+  setMotor(3, back);
 }
 
 void readMPU(float &ax, float &ay, float &az,
@@ -136,10 +143,11 @@ void setup() {
   delay(4000);
   lastTime = micros();
 
-  Serial.println("time_us,roll_deg,left_pwm_us,right_pwm_us");
+  Serial.println("time_us,pitch_comp_deg,pitch_madgwick_deg,front_pwm_us,back_pwm_us");
 }
 
 void loop() {
+
   float ax, ay, az, gx, gy, gz;
   readMPU(ax, ay, az, gx, gy, gz);
 
@@ -147,35 +155,52 @@ void loop() {
   float dt = (now - lastTime) * 1e-6f;
   lastTime = now;
 
+  // Complementary filter
+  float accPitch = atan2(-ax, az) * RAD_TO_DEG;
+  float gyroPitchRate = gy * RAD_TO_DEG;
+
+  pitchComp = alpha * (pitchComp + gyroPitchRate * dt)
+              + (1.0f - alpha) * accPitch;
+
+  // Madgwick (only for logging)
   madgwickUpdate(ax, ay, az, gx, gy, gz, dt);
 
-  roll = atan2(2.0f * (q0*q1 + q2*q3),
-               1.0f - 2.0f * (q1*q1 + q2*q2)) * RAD_TO_DEG;
+  pitchMadgwick = asin(-2.0f * (q1*q3 - q0*q2)) * RAD_TO_DEG;
 
-  float error = -roll;
+  // ---- PID Control ----
+  float error = -pitchComp;
+
   float pidP = Kp * error;
+
+  pidI += error * dt;
+  pidI = constrain(pidI, -50.0f, 50.0f);   // Anti-windup
+  float pidI_term = Ki * pidI;
+
   float pidD = Kd * (error - lastError) / dt;
   lastError = error;
 
-  float pidOutput = pidP + pidD;
+  float pidOutput = pidP + pidI_term + pidD;
+
   pidOutput = constrain(
     pidOutput,
     -(maxThrottle - baseThrottle),
      (maxThrottle - baseThrottle)
   );
 
-  float left  = baseThrottle + pidOutput;
-  float right = baseThrottle - pidOutput;
+  float front = baseThrottle + pidOutput;
+  float back  = baseThrottle - pidOutput;
 
-  writeMotors(left, right);
+  writeMotors(front, back);
 
   Serial.print(now);
   Serial.print(",");
-  Serial.print(roll, 3);
+  Serial.print(pitchComp, 3);
   Serial.print(",");
-  Serial.print(leftPWM, 1);
+  Serial.print(pitchMadgwick, 3);
   Serial.print(",");
-  Serial.println(rightPWM, 1);
+  Serial.print(frontPWM, 1);
+  Serial.print(",");
+  Serial.println(backPWM, 1);
 
   delay(2);
 }
