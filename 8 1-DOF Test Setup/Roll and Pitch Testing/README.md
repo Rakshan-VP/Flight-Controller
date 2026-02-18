@@ -1,6 +1,7 @@
 # 2-DOF Roll–Pitch Drone Test Setup (4-String Safety Rig)
 
 ## Overview
+![WhatsApp Image 2026-02-19 at 3 20 25 AM](https://github.com/user-attachments/assets/0b014028-6946-4b00-b832-73c7e54f164d)
 
 I built this setup to test combined roll and pitch control of my drone after completing 1-DOF roll/pitch testing.  
 
@@ -12,8 +13,8 @@ To improve safety, I constrained the drone using four strings attached to the la
 
 - I attached four equal-length strings to the bottom of each drone leg.
 - The other ends are fixed to a rigid overhead structure.
-- The anchor points form a square.
-- The drone is centered below the square.
+- The anchor points form a rectangle.
+- The drone is centered below the rectangle.
 - All strings are slightly tensioned before arming.
 
 This setup:
@@ -45,7 +46,7 @@ This setup:
 
 ## Observations Focus
 
-During testing, I monitored:
+During testing, our main is to monitor:
 
 - Overshoot
 - Settling time
