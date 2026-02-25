@@ -12,7 +12,11 @@ const char* password = "12345678";
 WiFiServer server(5000);
 WiFiClient client;
 
-float ax_off=0, ay_off=0, az_off=0;
+// Angle offsets
+float roll_off = 0;
+float pitch_off = 0;
+
+// Gyro offsets
 float gx_off=0, gy_off=0, gz_off=0;
 
 bool calibrated = false;
@@ -25,9 +29,9 @@ void setup() {
 
   prefs.begin("drone", false);
 
-  ax_off = prefs.getFloat("ax",0);
-  ay_off = prefs.getFloat("ay",0);
-  az_off = prefs.getFloat("az",0);
+  // Load saved values
+  roll_off  = prefs.getFloat("roll",0);
+  pitch_off = prefs.getFloat("pitch",0);
   gx_off = prefs.getFloat("gx",0);
   gy_off = prefs.getFloat("gy",0);
   gz_off = prefs.getFloat("gz",0);
@@ -36,6 +40,8 @@ void setup() {
   WiFi.softAP(ssid, password);
   server.begin();
 }
+
+// ----------------------------------------------------
 
 void calibrateSensors() {
 
@@ -58,16 +64,33 @@ void calibrateSensors() {
     delay(3);
   }
 
-  ax_off = ax_sum / samples;
-  ay_off = ay_sum / samples;
-  az_off = (az_sum / samples) - 16384; // remove gravity
+  // Averages
+  float ax_avg = ax_sum / samples;
+  float ay_avg = ay_sum / samples;
+  float az_avg = az_sum / samples;
+
+  // -------- Axis Mapping --------
+  // Drone X = IMU -Y
+  // Drone Y = IMU X
+
+  float drone_ax = -ay_avg;
+  float drone_ay = ax_avg;
+  float drone_az = az_avg;
+
+  // -------- Compute Angle Offsets --------
+  roll_off  = atan2(drone_ay, drone_az) * 180.0 / PI;
+  pitch_off = atan2(-drone_ax, 
+                    sqrt(drone_ay*drone_ay + drone_az*drone_az)) 
+                    * 180.0 / PI;
+
+  // -------- Gyro offsets (unchanged) --------
   gx_off = gx_sum / samples;
   gy_off = gy_sum / samples;
   gz_off = gz_sum / samples;
 
-  prefs.putFloat("ax", ax_off);
-  prefs.putFloat("ay", ay_off);
-  prefs.putFloat("az", az_off);
+  // Save to flash
+  prefs.putFloat("roll", roll_off);
+  prefs.putFloat("pitch", pitch_off);
   prefs.putFloat("gx", gx_off);
   prefs.putFloat("gy", gy_off);
   prefs.putFloat("gz", gz_off);
@@ -76,17 +99,20 @@ void calibrateSensors() {
   calibrated = true;
 }
 
+// ----------------------------------------------------
+
 void sendStatus(){
   client.print("STATUS,");
   client.print(calibrated ? "1" : "0");
   client.print(",");
-  client.print(ax_off); client.print(",");
-  client.print(ay_off); client.print(",");
-  client.print(az_off); client.print(",");
+  client.print(roll_off); client.print(",");
+  client.print(pitch_off); client.print(",");
   client.print(gx_off); client.print(",");
   client.print(gy_off); client.print(",");
   client.println(gz_off);
 }
+
+// ----------------------------------------------------
 
 void loop() {
 
@@ -95,7 +121,6 @@ void loop() {
     return;
   }
 
-  // Handle commands
   while (client.available()) {
     String cmd = client.readStringUntil('\n');
     cmd.trim();

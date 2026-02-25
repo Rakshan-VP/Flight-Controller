@@ -21,15 +21,14 @@ class DroneGUI(QWidget):
         self.initUI()
         self.connectToDrone()
 
-        # Timer for polling data
         self.timer = QTimer()
         self.timer.timeout.connect(self.receiveData)
-        self.timer.start(200)   # 5 Hz polling
+        self.timer.start(200)
 
     # ---------------- UI ----------------
     def initUI(self):
 
-        self.calib_btn = QPushButton("Level Calibrate ACC + Gyro")
+        self.calib_btn = QPushButton("Level Calibrate")
         self.status_label = QLabel("Not Connected")
 
         self.calib_btn.clicked.connect(self.calibrate)
@@ -42,7 +41,7 @@ class DroneGUI(QWidget):
 
         self.offset_label = QLabel(
             "Offsets:\n"
-            "AX: 0\nAY: 0\nAZ: 0\n"
+            "Roll: 0\nPitch: 0\n"
             "GX: 0\nGY: 0\nGZ: 0"
         )
 
@@ -52,7 +51,7 @@ class DroneGUI(QWidget):
         main_layout.addWidget(self.offset_label)
 
         self.setLayout(main_layout)
-        self.setWindowTitle("Drone Sensor Calibration")
+        self.setWindowTitle("Drone Angle Calibration")
         self.resize(400, 250)
 
     # ---------------- NETWORK ----------------
@@ -96,7 +95,6 @@ class DroneGUI(QWidget):
                 self.parseStatus(data)
 
         except BlockingIOError:
-            # No data available (normal case)
             pass
         except:
             self.connectionLost()
@@ -104,12 +102,12 @@ class DroneGUI(QWidget):
     def parseStatus(self, data):
         parts = data.split(",")
 
-        if len(parts) < 8:
+        if len(parts) < 7:
             return
 
         cal_flag = parts[1]
-        ax, ay, az = parts[2], parts[3], parts[4]
-        gx, gy, gz = parts[5], parts[6], parts[7]
+        roll, pitch = parts[2], parts[3]
+        gx, gy, gz = parts[4], parts[5], parts[6]
 
         if cal_flag == "1":
             self.calib_status.setText("Calibration: Calibrated")
@@ -118,9 +116,8 @@ class DroneGUI(QWidget):
 
         self.offset_label.setText(
             f"Offsets:\n"
-            f"AX: {ax}\n"
-            f"AY: {ay}\n"
-            f"AZ: {az}\n"
+            f"Roll: {roll}\n"
+            f"Pitch: {pitch}\n"
             f"GX: {gx}\n"
             f"GY: {gy}\n"
             f"GZ: {gz}"

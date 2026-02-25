@@ -11,13 +11,10 @@ const char* password = "12345678";
 WiFiServer server(5000);
 WiFiClient client;
 
-// ---------------- FIXED OFFSETS ----------------
-const float ax_off = 729.0;
-const float ay_off = -127.0;
-const float az_off = -1763.0;
-const float gx_off = -165.0;
-const float gy_off = -37.0;
-const float gz_off = 72.0;
+// ---------------- ANGLE OFFSETS ONLY ----------------
+// From your calibration window
+const float roll_offset  = 2.65;
+const float pitch_offset = -0.05;
 
 // ---------------- Complementary Filter ----------------
 float roll = 0.0;
@@ -48,7 +45,7 @@ void setup() {
   lastIMU = micros();
   lastTelemetry = micros();
 
-  Serial.println("ESP32 Ready - Fixed Offsets Mode");
+  Serial.println("ESP32 Ready - Angle Offset Mode");
 }
 
 // ------------------------------------------------------
@@ -58,41 +55,40 @@ void updateIMU() {
   int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
 
-  // Remove fixed offsets
-  ax -= ax_off;
-  ay -= ay_off;
-  az -= az_off;
-  gx -= gx_off;
-  gy -= gy_off;
-  gz -= gz_off;
-
-  // ----- Axis Remapping -----
+  // ----- Convert to physical units -----
   float imuX = ax / 16384.0;
   float imuY = ay / 16384.0;
   float imuZ = az / 16384.0;
 
-  float accX = -imuY;   // Drone X
-  float accY =  imuX;   // Drone Y
-  float accZ =  imuZ;   // Drone Z
-
   float gyroX = gx / 131.0;
   float gyroY = gy / 131.0;
+
+  // ----- Axis Remapping -----
+  // Drone X = IMU -Y
+  // Drone Y = IMU X
+  float accX = -imuY;
+  float accY =  imuX;
+  float accZ =  imuZ;
+
+  float drgyroX = -gyroY;
+  float drgyroY =  gyroX;
 
   float dt = 1.0 / IMU_FREQ;
 
   float accRoll  = atan2(accY, accZ) * 180.0 / PI;
   float accPitch = atan2(-accX, sqrt(accY*accY + accZ*accZ)) * 180.0 / PI;
 
-  roll  = alpha * (roll  + gyroX * dt) + (1 - alpha) * accRoll;
-  pitch = alpha * (pitch + gyroY * dt) + (1 - alpha) * accPitch;
+  roll  = alpha * (roll  + drgyroX * dt) + (1 - alpha) * accRoll;
+  pitch = alpha * (pitch + drgyroY * dt) + (1 - alpha) * accPitch;
 }
 
 // ------------------------------------------------------
 
 void sendAngles() {
 
-  float drone_roll  = roll;
-  float drone_pitch = pitch;
+  // Apply ONLY angle offsets here
+  float drone_roll  = roll  - roll_offset;
+  float drone_pitch = pitch - pitch_offset;
 
   client.print(drone_roll);
   client.print(",");
@@ -108,7 +104,6 @@ void loop() {
     return;
   }
 
-  // Handle START / STOP
   while (client.available()) {
     String cmd = client.readStringUntil('\n');
     cmd.trim();
