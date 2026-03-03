@@ -21,8 +21,9 @@ WiFiClient client;
 const float roll_offset  = 2.65;
 const float pitch_offset = -0.05;
 
-// -------- Filter --------
-float roll = 0, pitch = 0;
+// -------- Complementary Filter --------
+float roll = 0.0;
+float pitch = 0.0;
 const float alpha = 0.98;
 
 const float IMU_FREQ = 250.0;
@@ -30,6 +31,14 @@ const float TELEMETRY_FREQ = 100.0;
 
 unsigned long lastIMU = 0;
 unsigned long lastTelemetry = 0;
+
+// -------- Raw IMU --------
+float rawAccX=0, rawAccY=0, rawAccZ=0;
+float rawGyroX=0, rawGyroY=0, rawGyroZ=0;
+
+// -------- Drone Frame --------
+float droneAccX=0, droneAccY=0, droneAccZ=0;
+float droneGyroX=0, droneGyroY=0, droneGyroZ=0;
 
 // -------- PID --------
 float Kp=0, Ki=0, Kd=0;
@@ -80,31 +89,31 @@ void updateIMU(){
   int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
 
-  float imuX = ax/16384.0;
-  float imuY = ay/16384.0;
-  float imuZ = az/16384.0;
+  // ----- Convert to physical units -----
+  rawAccX = ax / 16384.0;
+  rawAccY = ay / 16384.0;
+  rawAccZ = az / 16384.0;
 
-  float accX = -imuY;
-  float accY =  imuX;
-  float accZ =  imuZ;
+  rawGyroX = gx / 65.5;
+  rawGyroY = gy / 65.5;
+  rawGyroZ = gz / 65.5;
 
-  float gyroX = gx/131.0;
-  float gyroY = gy/131.0;
+  // ----- Axis Remapping (Drone Frame) -----
+  droneAccX = -rawAccY;
+  droneAccY =  rawAccX;
+  droneAccZ =  rawAccZ;
 
-  float drgyroX = -gyroY;
-  float drgyroY =  gyroX;
+  droneGyroX = -rawGyroY;
+  droneGyroY =  rawGyroX;
+  droneGyroZ =  rawGyroZ;
 
-  float dt = 1.0/IMU_FREQ;
+  float dt = 1.0 / IMU_FREQ;
 
-  float accRoll  = atan2(accY, accZ)*180/PI;
-  float accPitch = atan2(-accX, sqrt(accY*accY+accZ*accZ))*180/PI;
+  float accRoll  = atan2(droneAccY, droneAccZ) * 180.0 / PI;
+  float accPitch = atan2(-droneAccX, sqrt(droneAccY*droneAccY + droneAccZ*droneAccZ)) * 180.0 / PI;
 
-  roll  = alpha*(roll + drgyroX*dt) + (1-alpha)*accRoll;
-  pitch = alpha*(pitch + drgyroY*dt) + (1-alpha)*accPitch;
-
-  // Apply angle offsets only
-  roll  -= roll_offset;
-  pitch -= pitch_offset;
+  roll  = alpha * (roll  + droneGyroX * dt) + (1 - alpha) * accRoll;
+  pitch = alpha * (pitch + droneGyroY * dt) + (1 - alpha) * accPitch;
 }
 
 // -------- PID --------
@@ -113,11 +122,17 @@ float computePID(float measured){
   float dt = 1.0/IMU_FREQ;
 
   error = 0 - measured;
+
   integral += error * dt;
   integral = constrain(integral, -200, 200);
 
-  float derivative = (error - prevError)/dt;
-  prevError = error;
+  // ---- USE DIRECT GYRO RATE FOR D TERM ----  
+  float derivative;
+
+  if(rollMode)
+      derivative = -droneGyroX;   // roll rate
+  else
+      derivative = -droneGyroY;   // pitch rate
 
   return Kp*error + Ki*integral + Kd*derivative;
 }
@@ -152,6 +167,9 @@ void setup() {
   Serial.begin(115200);
   Wire.begin(21,22);
   mpu.initialize();
+  mpu.setDLPFMode(MPU6050_DLPF_BW_20);      // 20Hz cutoff
+  mpu.setFullScaleGyroRange(MPU6050_GYRO_FS_500);
+  mpu.setFullScaleAccelRange(MPU6050_ACCEL_FS_4);
   setupPWM();
 
   WiFi.softAP(ssid, password);
@@ -197,25 +215,39 @@ void loop() {
     }
   }
 
+  // 250 Hz IMU update
   if (micros() - lastIMU >= (1000000.0 / IMU_FREQ)) {
     lastIMU += (1000000.0 / IMU_FREQ);
     updateIMU();
 
     if(testRunning){
-      float measured = rollMode ? roll : pitch;
+      float measured = rollMode ? (roll - roll_offset)
+                                : (pitch - pitch_offset);
       float pidOut = computePID(measured);
       applyMotor(pidOut);
     }
   }
 
+  // 100 Hz telemetry
   if (micros() - lastTelemetry >= (1000000.0 / TELEMETRY_FREQ)) {
     lastTelemetry += (1000000.0 / TELEMETRY_FREQ);
 
-    client.print(roll); client.print(",");
-    client.print(pitch); client.print(",");
-    client.print(m1_pwm); client.print(",");
-    client.print(m2_pwm); client.print(",");
-    client.print(m3_pwm); client.print(",");
-    client.println(m4_pwm);
+    char buffer[256];
+
+    snprintf(buffer, sizeof(buffer),
+      "%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,"
+      "%.3f,%.3f,%.3f,"
+      "%.3f,%.3f,%.3f,"
+      "%.3f,%.3f,%.3f,"
+      "%.3f,%.3f,%.3f\n",
+      roll, pitch,
+      m1_pwm, m2_pwm, m3_pwm, m4_pwm,
+      rawAccX, rawAccY, rawAccZ,
+      rawGyroX, rawGyroY, rawGyroZ,
+      droneAccX, droneAccY, droneAccZ,
+      droneGyroX, droneGyroY, droneGyroZ
+    );
+
+    client.print(buffer);
   }
 }

@@ -110,6 +110,13 @@ class PIDTestGUI(QWidget):
         self.rp_plot.addLegend()
         self.rp_plot.setLabel('left', 'Angle (deg)')
         self.rp_plot.setLabel('bottom', 'Time (s)')
+        # Zero reference line
+        self.zero_line = pg.InfiniteLine(
+            pos=0,
+            angle=0,
+            pen=pg.mkPen(color=(200, 200, 200), width=1, style=pg.QtCore.Qt.DashLine)
+        )
+        self.rp_plot.addItem(self.zero_line)
 
         self.roll_curve = self.rp_plot.plot(pen='r', name="Roll")
         self.pitch_curve = self.rp_plot.plot(pen='b', name="Pitch")
@@ -234,7 +241,15 @@ class PIDTestGUI(QWidget):
         filename = time.strftime("New/3 Level Test/log/%Y%m%d_%H%M%S.csv")
         self.logfile = open(filename, "w", newline="")
         self.csvwriter = csv.writer(self.logfile)
-        self.csvwriter.writerow(["t","roll","pitch","m1","m2","m3","m4"])
+
+        # Updated header (extra IMU values added)
+        self.csvwriter.writerow([
+            "t","roll","pitch","m1","m2","m3","m4",
+            "accX_raw","accY_raw","accZ_raw",
+            "gyroX_raw","gyroY_raw","gyroZ_raw",
+            "accX_drone","accY_drone","accZ_drone",
+            "gyroX_drone","gyroY_drone","gyroZ_drone"
+        ])
 
     # ---------------- Telemetry ----------------
     def receiveData(self):
@@ -253,13 +268,25 @@ class PIDTestGUI(QWidget):
             while "\n" in self.buffer:
                 line, self.buffer = self.buffer.split("\n", 1)
 
+                parts = line.split(",")
+
+                # Must have at least roll,pitch,m1,m2,m3,m4
+                if len(parts) < 6:
+                    continue
+
                 try:
-                    roll,pitch,m1,m2,m3,m4 = map(float,line.split(","))
+                    roll  = float(parts[0])
+                    pitch = float(parts[1])
+                    m1    = float(parts[2])
+                    m2    = float(parts[3])
+                    m3    = float(parts[4])
+                    m4    = float(parts[5])
                 except:
                     continue
 
                 t = time.time() - self.start_time
 
+                # ---- Plot (UNCHANGED) ----
                 self.time_data.append(t)
                 self.roll_data.append(roll)
                 self.pitch_data.append(pitch)
@@ -268,7 +295,34 @@ class PIDTestGUI(QWidget):
                 self.m3_data.append(m3)
                 self.m4_data.append(m4)
 
-                self.csvwriter.writerow([t,roll,pitch,m1,m2,m3,m4])
+                # ---- Extended Logging (only if full 19 values present) ----
+                if len(parts) == 19:
+                    try:
+                        accX_raw  = float(parts[6])
+                        accY_raw  = float(parts[7])
+                        accZ_raw  = float(parts[8])
+                        gyroX_raw = float(parts[9])
+                        gyroY_raw = float(parts[10])
+                        gyroZ_raw = float(parts[11])
+                        accX_drone  = float(parts[12])
+                        accY_drone  = float(parts[13])
+                        accZ_drone  = float(parts[14])
+                        gyroX_drone = float(parts[15])
+                        gyroY_drone = float(parts[16])
+                        gyroZ_drone = float(parts[17])
+                    except:
+                        continue
+
+                    self.csvwriter.writerow([
+                        t,roll,pitch,m1,m2,m3,m4,
+                        accX_raw,accY_raw,accZ_raw,
+                        gyroX_raw,gyroY_raw,gyroZ_raw,
+                        accX_drone,accY_drone,accZ_drone,
+                        gyroX_drone,gyroY_drone,gyroZ_drone
+                    ])
+                else:
+                    # fallback logging if incomplete
+                    self.csvwriter.writerow([t,roll,pitch,m1,m2,m3,m4])
 
             if len(self.time_data) > MAX_POINTS:
                 self.time_data = self.time_data[-MAX_POINTS:]
@@ -310,3 +364,6 @@ if __name__ == "__main__":
     window = PIDTestGUI()
     window.show()
     sys.exit(app.exec_())
+
+#2,0,0.5 - Roll
+#
