@@ -160,6 +160,11 @@ Observe:
 
 Telemetry is also recorded in the log file.
 
+### Results
+Kp = 2.2 Ki = 0.05 Kd = 0.5
+![pitch](https://github.com/user-attachments/assets/8daac9c7-aaf1-4f43-8ab0-a3de3e4a541f)
+The plots are in the Pitch Test Results folder.
+
 ---
 
 ## Logs
