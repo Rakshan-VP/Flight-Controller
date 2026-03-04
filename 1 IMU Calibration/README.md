@@ -206,18 +206,6 @@ IMU Calibration/
 
 ---
 
-## Future Improvements
-
-Possible upgrades:
-
-* Temperature compensated calibration
-* Multi-position accelerometer calibration
-* Automatic gyro drift estimation
-* Live IMU plotting in GUI
-* Export calibration logs
-
----
-
 ## License
 
 Open-source for educational and drone development purposes.
