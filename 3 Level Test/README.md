@@ -130,13 +130,9 @@ Observe:
 All data is logged for analysis.
 
 ### Results
-Kp = 2.0 Ki =0.1  Kd = 0.6
-![roll](https://github.com/user-attachments/assets/a5d2cd71-7a6a-4dca-bf2c-2b53487e536a)
-
-<img width="1536" height="807" alt="plot1" src="https://github.com/user-attachments/assets/a29d3056-557e-4057-b06a-2719bc8881d3" />
-
-<img width="1536" height="807" alt="plot2" src="https://github.com/user-attachments/assets/b11cd145-7e94-4ee0-847f-0ceb53dd0d49" />
-
+Kp = 2.0 Ki =0.05  Kd = 0.6
+![roll](https://github.com/user-attachments/assets/658ec922-5a41-4d7e-be5e-f0418ec3342c)
+The results are stored in the Roll Test Results folder.
 ---
 
 ## Pitch Test
@@ -163,7 +159,7 @@ Telemetry is also recorded in the log file.
 ### Results
 Kp = 2.2 Ki = 0.05 Kd = 0.5
 ![pitch](https://github.com/user-attachments/assets/8daac9c7-aaf1-4f43-8ab0-a3de3e4a541f)
-The plots are in the Pitch Test Results folder.
+The results are stored in the Pitch Test Results folder.
 
 ---
 
