@@ -11,6 +11,7 @@ The level test setup consists of two main components:
 
 - **ESP32 Firmware (`level.ino`)**
 - **Desktop GUI (`GUI.py`)**
+- **Log Analysis Script (`logplotting.py`)**
 
 The ESP32 performs IMU processing and motor control while the GUI sends PID parameters, visualizes telemetry, and logs data.
 
@@ -63,7 +64,37 @@ Telemetry includes:
 - raw IMU data
 - processed drone frame IMU data
 
-See implementation: :contentReference[oaicite:0]{index=0}
+---
+
+## Log Plotting Script
+
+The folder also includes **`logplotting.py`**, a small analysis script used to visualize the recorded telemetry logs.
+
+This script reads a generated CSV log file and produces three plots:
+
+1. **Roll and Pitch vs Time**
+2. **Roll Error and Pitch Error vs Time**
+3. **Motor PWM outputs (M1–M4) vs Time**
+
+These plots help evaluate:
+
+- stabilization performance
+- PID response behavior
+- motor correction activity during tests
+
+### Running the Script
+
+Update the file path if necessary and run:
+
+```bash
+python logplotting.py
+```
+
+Required libraries:
+
+```bash
+pip install pandas matplotlib
+```
 
 ---
 
@@ -130,9 +161,19 @@ Observe:
 All data is logged for analysis.
 
 ### Results
-Kp = 2.0 Ki =0.05  Kd = 0.6
+
+The following plot shows the response obtained during roll stabilization testing using:
+
+```
+Kp = 2.0
+Ki = 0.05
+Kd = 0.6
+```
+
 ![roll](https://github.com/user-attachments/assets/658ec922-5a41-4d7e-be5e-f0418ec3342c)
-The results are stored in the Roll Test Results folder.
+
+All experiment data and corresponding plots are stored in the **Roll Test Results** folder.
+
 ---
 
 ## Pitch Test
@@ -157,9 +198,18 @@ Observe:
 Telemetry is also recorded in the log file.
 
 ### Results
-Kp = 2.2 Ki = 0.05 Kd = 0.5
+
+The following plot shows the response obtained during pitch stabilization testing using:
+
+```
+Kp = 2.2
+Ki = 0.05
+Kd = 0.5
+```
+
 ![pitch](https://github.com/user-attachments/assets/8daac9c7-aaf1-4f43-8ab0-a3de3e4a541f)
-The results are stored in the Pitch Test Results folder.
+
+All experiment data and corresponding plots are stored in the **Pitch Test Results** folder.
 
 ---
 
