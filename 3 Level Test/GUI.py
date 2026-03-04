@@ -238,7 +238,7 @@ class PIDTestGUI(QWidget):
 
         self.start_time = time.time()
 
-        filename = time.strftime("New/3 Level Test/log/%Y%m%d_%H%M%S.csv")
+        filename = time.strftime("3 Level Test/log/%Y%m%d_%H%M%S.csv")
         self.logfile = open(filename, "w", newline="")
         self.csvwriter = csv.writer(self.logfile)
 
@@ -295,8 +295,8 @@ class PIDTestGUI(QWidget):
                 self.m3_data.append(m3)
                 self.m4_data.append(m4)
 
-                # ---- Extended Logging (only if full 19 values present) ----
-                if len(parts) == 19:
+                # ---- Extended Logging (only if full 18 values present) ----
+                if len(parts) == 18:
                     try:
                         accX_raw  = float(parts[6])
                         accY_raw  = float(parts[7])
