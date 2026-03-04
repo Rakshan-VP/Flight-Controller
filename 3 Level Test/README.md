@@ -130,6 +130,9 @@ Observe:
 All data is logged for analysis.
 
 ### Results
+Kp = 2.0 Ki =0.1  Kd = 0.6
+![roll](https://github.com/user-attachments/assets/a5d2cd71-7a6a-4dca-bf2c-2b53487e536a)
+
 <img width="1536" height="807" alt="plot1" src="https://github.com/user-attachments/assets/a29d3056-557e-4057-b06a-2719bc8881d3" />
 
 <img width="1536" height="807" alt="plot2" src="https://github.com/user-attachments/assets/b11cd145-7e94-4ee0-847f-0ceb53dd0d49" />
