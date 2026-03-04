@@ -199,8 +199,8 @@ Proper bias removal significantly improves **attitude estimation accuracy**.
 ```
 IMU Calibration/
 │
-├── esp32_calibration.ino     # ESP32 firmware
-├── calibration_gui.py        # PyQt5 GUI
+├── mpu6050.ino     # ESP32 firmware
+├── GUI.py        # PyQt5 GUI
 └── README.md
 ```
 
