@@ -1,6 +1,7 @@
 # Complementary Filter
+![comp](https://github.com/user-attachments/assets/e3ab18e7-9403-4531-9f69-400684c896e2)
 
-This project streams **real-time roll and pitch angles** from an **MPU6050 IMU** using an **ESP32** over WiFi to a **PyQt5 desktop GUI**.
+This module streams **real-time roll and pitch angles** from an **MPU6050 IMU** using an **ESP32** over WiFi to a **PyQt5 desktop GUI**.
 
 The GUI plots the angles live to help test **IMU orientation, filtering, and frame alignment** before implementing drone flight control.
 
