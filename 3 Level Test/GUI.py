@@ -366,4 +366,4 @@ if __name__ == "__main__":
     sys.exit(app.exec_())
 
 #2,0,0.5 - Roll
-#
+#2.2, 0.05,0.5 - Pitch
