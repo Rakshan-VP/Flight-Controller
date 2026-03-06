@@ -94,9 +94,9 @@ void updateIMU(){
   rawAccY = ay / 16384.0;
   rawAccZ = az / 16384.0;
 
-  rawGyroX = gx / 65.5;
-  rawGyroY = gy / 65.5;
-  rawGyroZ = gz / 65.5;
+  rawGyroX = gx / 131.0;
+  rawGyroY = gy / 131.0;
+  rawGyroZ = gz / 131.0;
 
   // ----- Axis Remapping (Drone Frame) -----
   droneAccX = -rawAccY;
