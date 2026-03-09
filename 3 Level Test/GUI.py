@@ -365,5 +365,5 @@ if __name__ == "__main__":
     window.show()
     sys.exit(app.exec_())
 
-#2,0,0.5 - Roll
-#2.2, 0.05,0.5 - Pitch
+#2.5,0.1,0.6 - Roll
+#2.2,0.1,0.5 - Pitch
