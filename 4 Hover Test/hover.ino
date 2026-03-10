@@ -42,7 +42,7 @@ const float TELEMETRY_FREQ = 100.0;
 unsigned long lastIMU = 0;
 unsigned long lastTelemetry = 0;
 
-unsigned long armTimeout = 7500;
+unsigned long armTimeout = 7500; //ms
 
 // -------- Raw IMU --------
 float rawAccX=0, rawAccY=0, rawAccZ=0;
@@ -67,9 +67,17 @@ bool armed=false;
 bool testRunning=false;
 bool rampDown=false;
 
+// -------- Connection failsafe --------
+bool connectionLost = false;
+bool connectionRamp = false;
+unsigned long lastClientSeen = 0;
+
 unsigned long armTime=0;
 unsigned long lastBasePWMTime=0;
 unsigned long lastRampStep=0;
+
+unsigned long connectionTimeout = 2000;   // ms before failsafe
+unsigned long connectionRampDelay = 80;   // slower ramp for connection loss
 
 // -------- Motor State --------
 float m1_pwm=1000, m2_pwm=1000, m3_pwm=1000, m4_pwm=1000;
@@ -201,6 +209,11 @@ void loop() {
   if (!client || !client.connected())
       client = server.available();
 
+  if(client && client.connected()){
+    lastClientSeen = millis();
+    connectionLost = false;
+  }
+
   if (client && client.connected()) {
     while(client.available()){
 
@@ -232,6 +245,7 @@ void loop() {
       if(cmd=="START_TEST" && armed){
         testRunning=true;
         rampDown=false;
+        connectionRamp=false;
 
         integral_r=0;
         integral_p=0;
@@ -244,6 +258,7 @@ void loop() {
       if(cmd=="STOP_TEST"){
         testRunning=false;
         rampDown=true;
+        connectionRamp=false;
         lastRampStep=millis();
 
         setLED(CRGB::Yellow);
@@ -259,7 +274,23 @@ void loop() {
     }
   }
 
-  if(rampDown && millis()-lastRampStep >= 40){
+  // -------- Connection Lost Failsafe --------
+  if(armed && (millis() - lastClientSeen > connectionTimeout)){
+    connectionLost = true;
+  }
+
+  if(connectionLost && !rampDown){
+    rampDown = true;
+    connectionRamp = true;
+    testRunning = false;
+    lastRampStep = millis();
+    setLED(CRGB::Purple);
+  }
+
+  // -------- Ramp Logic --------
+  unsigned long rampDelay = connectionRamp ? connectionRampDelay : 40;
+
+  if(rampDown && millis()-lastRampStep >= rampDelay){
 
       basePWM -= 2;
       lastRampStep = millis();
@@ -272,6 +303,7 @@ void loop() {
       if(basePWM <= 1100){
           basePWM = 1100;
           rampDown=false;
+          connectionRamp=false;
           armed=false;
 
           stopMotors();
@@ -290,6 +322,7 @@ void loop() {
   if(testRunning){
     if(millis() - lastBasePWMTime > 5000){
       rampDown=true;
+      connectionRamp=false;
       testRunning=false;
     }
   }
@@ -327,6 +360,7 @@ void loop() {
       droneGyroX, droneGyroY, droneGyroZ
     );
 
-    client.print(buffer);
+    if(client && client.connected())
+      client.print(buffer);
   }
 }
