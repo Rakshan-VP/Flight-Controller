@@ -35,8 +35,8 @@ int roll_min=410, roll_mid=1940, roll_max=3835;
 int pit_min=218, pit_mid=1801, pit_max=3603;
 
 // -------- PWM SETTINGS --------
-#define PWM_MIN 1100
-#define PWM_MAX 1900
+#define PWM_MIN 1050
+#define PWM_MAX 1950
 #define PWM_MID 1500
 #define DEADZONE 20
 
