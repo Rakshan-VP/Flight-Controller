@@ -40,7 +40,7 @@ class PIDTestGUI(QWidget):
         self.logfile = None
         self.csvwriter = None
 
-        os.makedirs("3 Level Test/log", exist_ok=True)
+        os.makedirs("03 Level Test/log", exist_ok=True)
 
         self.initUI()
         self.connectToDrone()
@@ -238,7 +238,7 @@ class PIDTestGUI(QWidget):
 
         self.start_time = time.time()
 
-        filename = time.strftime("3 Level Test/log/%Y%m%d_%H%M%S.csv")
+        filename = time.strftime("03 Level Test/log/%Y%m%d_%H%M%S.csv")
         self.logfile = open(filename, "w", newline="")
         self.csvwriter = csv.writer(self.logfile)
 
