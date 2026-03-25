@@ -273,7 +273,11 @@ class GUI(QWidget):
 
         cmd = f"SET_ALL|{json_data}\n"
         self.log(">> " + cmd.strip())
-        self.ser.write(cmd.encode())
+        encoded_cmd = cmd.encode()
+        for i in range(0, len(encoded_cmd), 64):  # Send in 64-byte chunks
+            self.ser.write(encoded_cmd[i:i+64])
+            self.ser.flush() # Ensure it's sent
+            time.sleep(0.01) # 10ms delay between chunks
 
         resp = self.wait_for_ack()
 
