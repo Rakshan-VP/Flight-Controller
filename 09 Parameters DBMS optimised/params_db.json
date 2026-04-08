@@ -1,0 +1,14 @@
+[
+  {
+    "g": "TRANSMITTER",
+    "n": "THROTTLE_MIN",
+    "d": 0.0,
+    "desc": "0-4095"
+  },
+  {
+    "g": "TRANSMITTER",
+    "n": "THROTTLE_MAX",
+    "d": 4095.0,
+    "desc": "0-4095"
+  }
+]
