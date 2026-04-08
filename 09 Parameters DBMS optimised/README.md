@@ -1,4 +1,4 @@
-# 🚀 Parameter DBMS — ESP32 + PyQt GUI
+# 🚀 Parameter DBMS 
 
 A minimal system to **store, edit, and sync parameters** between an ESP32 and a desktop GUI.
 
