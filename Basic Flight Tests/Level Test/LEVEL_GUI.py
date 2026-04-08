@@ -40,7 +40,7 @@ class PIDTestGUI(QWidget):
         self.logfile = None
         self.csvwriter = None
 
-        os.makedirs("Level Test/log", exist_ok=True)
+        os.makedirs("Basic Flight Tests/Level Test/log", exist_ok=True)
 
         self.initUI()
         self.connectToDrone()
@@ -149,7 +149,7 @@ class PIDTestGUI(QWidget):
         main_layout.addWidget(self.motor_plot)
 
         self.setLayout(main_layout)
-        self.setWindowTitle("1-DOF PID Test Bench")
+        self.setWindowTitle("1-DOF PID Test Bench (Static)")
         self.resize(1000, 800)
 
     # ---------------- Networking ----------------
@@ -238,7 +238,7 @@ class PIDTestGUI(QWidget):
 
         self.start_time = time.time()
 
-        filename = time.strftime("Level Test/log/%Y%m%d_%H%M%S.csv")
+        filename = time.strftime("Basic Flight Tests/Level Test/log/%Y%m%d_%H%M%S.csv")
         self.logfile = open(filename, "w", newline="")
         self.csvwriter = csv.writer(self.logfile)
 
