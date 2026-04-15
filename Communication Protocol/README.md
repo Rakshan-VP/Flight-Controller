@@ -8,14 +8,15 @@ This system uses a **centralized communication architecture** where the **Drone 
 - **Protocol:** UDP
 - **Ports:**
   - `8000` → Transmitter ↔ Drone
-  - `9000` → GCS ↔ Drone
+  - `9000` → Drone → GCS
+  - `9001` → GCS → Drone
 
 ---
 
 ## Architecture
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/c55e7980-862b-4eca-9b56-d1bbacee19d2" width="500"/>
+  <img width="461" height="181" alt="Connections" src="https://github.com/user-attachments/assets/718cc696-45b1-4028-8854-cf742d138960" />
 </p>
 
 - Drone runs in **WiFi SoftAP mode**
@@ -58,10 +59,10 @@ Used for:
 ---
 
 <p align="center">
-  <img width="791" height="101" alt="two" src="https://github.com/user-attachments/assets/4e06305c-215a-461e-9a0d-72def365ea2e" />
+  <img width="811" height="121" alt="two" src="https://github.com/user-attachments/assets/c044844a-9832-4937-bd5d-0d298d675220" />
 </p>
 
-### 3. Drone → GCS (Port 9000)
+### 3. Drone → GCS (Port 9001)
 
 Sends full telemetry:
 
