@@ -1,4 +1,4 @@
-# GCS — Drone — Transmitter Communication
+# Communication Protocol
 
 ## Overview
 
