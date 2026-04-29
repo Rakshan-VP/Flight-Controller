@@ -1,0 +1,334 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  position -1.5476020876535899 -0.00021923881062566042 0.07439128756456062
+  follow "Quadcopter"
+  followType "Mounted Shot"
+}
+TexturedBackground {
+  texture "stadium"
+}
+TexturedBackgroundLight {
+  texture "stadium"
+}
+DEF Quadcopter Robot {
+  translation 0 0 0.05
+  children [
+    GPS {
+    }
+    InertialUnit {
+      name "imu"
+    }
+    DEF FrontLeft HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 0 1
+        anchor 0.14 0.14 0.054
+      }
+      endPoint Solid {
+        translation 0.14 0.14 0.054
+        children [
+          Propeller {
+            shaftAxis 0 0 1
+            thrustConstants 0.00102 0
+            torqueConstants 0 0
+            device RotationalMotor {
+              name "M1FL"
+              maxVelocity 100
+              maxTorque 100
+            }
+            fastHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    transparency 0.5
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height 0.005
+                    radius 0.1
+                  }
+                }
+              ]
+              name "FasthelixFL"
+            }
+            slowHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    roughness 1
+                  }
+                  geometry Mesh {
+                    url [
+                      "../meshes/Propeller_CCW.obj"
+                    ]
+                  }
+                }
+              ]
+              name "SlowhelixFL"
+            }
+          }
+        ]
+        name "PropFL"
+        boundingObject Cylinder {
+          height 0.01
+          radius 0.1
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+    DEF FrontRight HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 0 1
+        anchor 0.14 -0.14 0.054
+      }
+      endPoint Solid {
+        translation 0.14 -0.14 0.054
+        children [
+          Propeller {
+            shaftAxis 0 0 -1
+            thrustConstants -0.00102 0
+            torqueConstants 0 0
+            device RotationalMotor {
+              name "M2FR"
+              maxVelocity 100
+              maxTorque 100
+            }
+            fastHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    transparency 0.5
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height 0.005
+                    radius 0.1
+                  }
+                }
+              ]
+              name "FasthelixFR"
+            }
+            slowHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    roughness 1
+                  }
+                  geometry Mesh {
+                    url [
+                      "../meshes/Propeller_CW.obj"
+                    ]
+                  }
+                }
+              ]
+              name "SlowhelixFR"
+            }
+          }
+        ]
+        name "PropFR"
+        boundingObject Cylinder {
+          height 0.01
+          radius 0.1
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+    DEF BackRight HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 0 1
+        anchor -0.14 -0.14 0.054
+      }
+      endPoint Solid {
+        translation -0.14 -0.14 0.054
+        children [
+          Propeller {
+            shaftAxis 0 0 1
+            thrustConstants 0.00102 0
+            torqueConstants 0 0
+            device RotationalMotor {
+              name "M3BR"
+              maxVelocity 100
+              maxTorque 100
+            }
+            fastHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    transparency 0.5
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height 0.005
+                    radius 0.1
+                  }
+                }
+              ]
+              name "FasthelixBR"
+            }
+            slowHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    roughness 1
+                  }
+                  geometry Mesh {
+                    url [
+                      "../meshes/Propeller_CCW.obj"
+                    ]
+                  }
+                }
+              ]
+              name "SlowhelixBR"
+            }
+          }
+        ]
+        name "PropBR"
+        boundingObject Cylinder {
+          height 0.01
+          radius 0.1
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+    DEF BackLeft HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 0 1
+        anchor -0.14 0.14 0.054
+      }
+      endPoint Solid {
+        translation -0.14 0.14 0.054
+        children [
+          Propeller {
+            shaftAxis 0 0 -1
+            thrustConstants -0.00102 0
+            torqueConstants 0 0
+            device RotationalMotor {
+              name "M4BL"
+              maxVelocity 100
+              maxTorque 100
+            }
+            fastHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    transparency 0.5
+                    metalness 0
+                  }
+                  geometry Cylinder {
+                    height 0.005
+                    radius 0.1
+                  }
+                }
+              ]
+              name "FasthelixBL"
+            }
+            slowHelix Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    roughness 1
+                  }
+                  geometry Mesh {
+                    url [
+                      "../meshes/Propeller_CW.obj"
+                    ]
+                  }
+                }
+              ]
+              name "SlowhelixBL"
+            }
+          }
+        ]
+        name "PropBL"
+        boundingObject Cylinder {
+          height 0.01
+          radius 0.1
+        }
+        physics Physics {
+          density -1
+          mass 0.01
+        }
+      }
+    }
+    DEF Body Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "textures/drone.jpg"
+          ]
+        }
+      }
+      geometry Mesh {
+        url [
+          "../meshes/Quadcopter.obj"
+        ]
+      }
+    }
+  ]
+  name "Quadcopter"
+  boundingObject Pose {
+    translation 0 0 0.01
+    children [
+      Box {
+        size 0.5 0.5 0.09
+      }
+    ]
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+  controller "control"
+  supervisor TRUE
+}
+DEF Helipad Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "textures/helipad.png"
+          ]
+        }
+        roughness 1
+      }
+      geometry Cylinder {
+        height 0.02
+        radius 0.4
+      }
+    }
+    Pose {
+      translation 0 0.011 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+          }
+          geometry Plane {
+            size 0.35 0.35
+          }
+        }
+      ]
+    }
+  ]
+  name "mini_helipad"
+  model "helipad"
+  description "Home location"
+  boundingObject Cylinder {
+    height 0.02
+    radius 0.4
+  }
+}
