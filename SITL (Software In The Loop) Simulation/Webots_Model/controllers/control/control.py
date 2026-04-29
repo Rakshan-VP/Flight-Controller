@@ -1,4 +1,5 @@
 from controller import Supervisor
+import math
 import socket
 import json
 
@@ -47,6 +48,9 @@ sock_rx.setblocking(False)
 # =========================
 # HELPERS
 # =========================
+def fmt(v, eps=1e-2):
+    return 0.0 if abs(v) < eps else v
+
 def clamp(v, vmin, vmax):
     return max(vmin, min(vmax, v))
 
@@ -56,14 +60,23 @@ def get_telemetry():
     vel = node.getVelocity()
     xdot, ydot, zdot = vel[0], vel[1], vel[2]
 
+    # Webots returns radians: convert to degrees
     r, p, yaw = imu.getRollPitchYaw()
+    r_deg = math.degrees(r)
+    p_deg = math.degrees(p)
+    yaw_deg = math.degrees(yaw)
+
+    # Webots returns rad/s: convert to deg/s
     rdot, pdot, ydot_ang = gyro.getValues()
+    rdot_deg = math.degrees(rdot)
+    pdot_deg = math.degrees(pdot)
+    ydot_ang_deg = math.degrees(ydot_ang)
 
     return [
         x, y, z,
         xdot, ydot, zdot,
-        r, p, yaw,
-        rdot, pdot, ydot_ang
+        r_deg, p_deg, yaw_deg,
+        rdot_deg, pdot_deg, ydot_ang_deg
     ]
 
 # =========================
@@ -116,6 +129,25 @@ while robot.step(timestep) != -1:
     # ---- SEND TELEMETRY ----
     try:
         telemetry = get_telemetry()
+
+        # unpack
+        x, y, z, vx, vy, vz, r, p, yaw, wx, wy, wz = telemetry
+
+        # format (zero small values)
+        x, y, z   = fmt(x), fmt(y), fmt(z)
+        vx, vy, vz = fmt(vx), fmt(vy), fmt(vz)
+        r, p, yaw = fmt(r), fmt(p), fmt(yaw)
+        wx, wy, wz = fmt(wx), fmt(wy), fmt(wz)
+
+        # 🔥 single-line clean print
+        print(
+            f"x:{x:.2f} | y:{y:.2f} | z:{z:.2f} | "
+            f"vx:{vx:.2f} | vy:{vy:.2f} | vz:{vz:.2f} | "
+            f"r:{r:.2f} | p:{p:.2f} | yaw:{yaw:.2f} | "
+            f"wx:{wx:.2f} | wy:{wy:.2f} | wz:{wz:.2f}"
+        )
+
+        # still send over UDP
         msg = json.dumps(telemetry)
         sock_tx.sendto(msg.encode(), (UDP_IP, 9002))
 

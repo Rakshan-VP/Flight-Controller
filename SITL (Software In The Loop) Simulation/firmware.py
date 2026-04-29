@@ -3,69 +3,107 @@ import json
 import time
 
 # =========================
-# UDP CONFIG
+# UDP CONFIG (ONLY CONTROL LINK)
 # =========================
 UDP_IP = "127.0.0.1"
 
-# Receive telemetry from Webots
-sock_rx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock_rx.bind((UDP_IP, 9002))
-sock_rx.setblocking(False)
-
-# Send motor commands to Webots
+# Send motor commands to control.py
 sock_tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+# Receive telemetry from control.py
+sock_telemetry = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock_telemetry.bind((UDP_IP, 9002))
+sock_telemetry.setblocking(False)
+
 # =========================
-# TEST COMMAND GENERATOR
+# STATE
 # =========================
-HOVER = 51.0
+target_z = 10.0   # 🔥 SET YOUR ALTITUDE HERE
+current_z = 0.0
+vz = 0.0
 
-def generate_test_command(t):
-    """
-    Simple test pattern:
-    - hover baseline
-    - small yaw oscillation
-    """
-    delta = 2.0 * (1 if int(t) % 2 == 0 else -1)
+# =========================
+# PID
+# =========================
+class PID:
+    def __init__(self, kp, ki, kd, limit=None):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.limit = limit
 
-    m1 = HOVER
-    m2 = HOVER + delta
-    m3 = HOVER
-    m4 = HOVER + delta
+        self.integral = 0
+        self.prev_error = 0
 
-    return [m1, m2, m3, m4]
+    def update(self, error, dt):
+        self.integral += error * dt
+        derivative = (error - self.prev_error) / dt if dt > 0 else 0
+        self.prev_error = error
+
+        out = (
+            self.kp * error +
+            self.ki * self.integral +
+            self.kd * derivative
+        )
+
+        if self.limit:
+            out = max(-self.limit, min(self.limit, out))
+
+        return out
+
+# =========================
+# CONTROLLER PARAMS
+# =========================
+pid_z = PID(kp=6.0, ki=1.5, kd=0.0, limit=20)
+HOVER = 50.0  
+
+# =========================
+# HELPERS
+# =========================
+def send_motor(v):
+    cmd = [v, v, v, v]
+    sock_tx.sendto(json.dumps(cmd).encode(), (UDP_IP, 9003))
 
 # =========================
 # MAIN LOOP
 # =========================
-last_print = 0
+last = time.time()
+
+print(f"[SYSTEM] Holding altitude at {target_z} m")
 
 while True:
     now = time.time()
+    dt = now - last
+    last = now
 
     # ---- RECEIVE TELEMETRY ----
     try:
-        data, _ = sock_rx.recvfrom(2048)
+        data, _ = sock_telemetry.recvfrom(2048)
         telemetry = json.loads(data.decode())
-
-        # Print at ~10 Hz to avoid spam
-        if now - last_print > 0.1:
-            print("Telemetry:", telemetry)
-            last_print = now
-
+        current_z = telemetry[2]
+        vz = telemetry[5]
     except BlockingIOError:
         pass
     except Exception as e:
-        print("RX error:", e)
+        print("Telemetry RX error:", e)
 
-    # ---- SEND MOTOR COMMAND ----
-    try:
-        cmd = generate_test_command(now)
-        msg = json.dumps(cmd)
-        sock_tx.sendto(msg.encode(), (UDP_IP, 9003))
+    # ---- ALTITUDE CONTROL ----
+    error = target_z - current_z
 
-    except Exception as e:
-        print("TX error:", e)
+    # PID (position)
+    thrust = pid_z.update(error, dt)
 
-    # Small sleep to stabilize loop (~200 Hz max)
-    time.sleep(0.005)
+    # 🔥 ADD VELOCITY DAMPING
+    damping = -3.0 * vz   # critical term
+
+    # combine
+    velocity = HOVER + 0.4* thrust +0.2* damping
+    velocity = max(0, min(100, velocity))
+
+    # ---- SEND TO MOTORS ----
+    send_motor(velocity)
+
+    # ---- DEBUG ----
+    print(f"Z: {current_z:.2f} → {target_z:.2f} | Vel: {velocity:.2f}")
+
+    time.sleep(0.01)
