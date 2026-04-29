@@ -19,6 +19,8 @@ TexturedBackgroundLight {
 DEF Quadcopter Robot {
   translation 0 0 0.05
   children [
+    Gyro {
+    }
     GPS {
     }
     InertialUnit {
