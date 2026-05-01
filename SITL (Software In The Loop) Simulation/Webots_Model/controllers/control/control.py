@@ -2,6 +2,9 @@ from controller import Supervisor
 import math
 import socket
 import json
+import base64
+import numpy as np
+import cv2  # Required for JPEG compression
 
 # =========================
 # INIT ROBOT
@@ -31,6 +34,13 @@ gps.enable(timestep)
 imu.enable(timestep)
 gyro.enable(timestep)
 
+# Camera
+camera = robot.getDevice("chasecam")
+camera.enable(timestep)
+
+cam_width = camera.getWidth()
+cam_height = camera.getHeight()
+
 # Self node
 node = robot.getSelf()
 
@@ -56,17 +66,14 @@ def clamp(v, vmin, vmax):
 
 def get_telemetry():
     x, y, z = gps.getValues()
-
     vel = node.getVelocity()
     xdot, ydot, zdot = vel[0], vel[1], vel[2]
 
-    # Webots returns radians: convert to degrees
     r, p, yaw = imu.getRollPitchYaw()
     r_deg = math.degrees(r)
     p_deg = math.degrees(p)
     yaw_deg = math.degrees(yaw)
 
-    # Webots returns rad/s: convert to deg/s
     rdot, pdot, ydot_ang = gyro.getValues()
     rdot_deg = math.degrees(rdot)
     pdot_deg = math.degrees(pdot)
@@ -86,70 +93,84 @@ k = 5e-5
 Izz = (1/12) * 1.0 * (0.5**2 + 0.5**2)
 
 # =========================
+# TIME CONTROL INIT
+# =========================
+start_time = robot.getTime()
+
+# =========================
+# CAMERA CONTROL
+# =========================
+frame_skip = 1
+frame_count = 0
+
+# =========================
 # MAIN LOOP
 # =========================
 while robot.step(timestep) != -1:
 
-    # ---- RECEIVE + APPLY + YAW ----
-    try:
-        data, _ = sock_rx.recvfrom(1024)
-        cmd = json.loads(data.decode())
+    current_time = robot.getTime() - start_time
 
-        if len(cmd) == 4:
+    # =========================
+    # MOTOR CONTROL
+    # =========================
+    if current_time < 2.0:
+        cmd = [51, 51, 51, 51]
+    elif current_time > 2.0:
+        cmd = [51.5, 51.25, 51.5, 51.25]
+    else:
+        try:
+            data, _ = sock_rx.recvfrom(1024)
+            cmd = json.loads(data.decode())
+        except (BlockingIOError, Exception):
+            cmd = None
 
-            tau_z = 0.0
+    if cmd and len(cmd) == 4:
+        tau_z = 0.0
+        for i, m in enumerate(motors):
+            w = clamp(cmd[i], 0, 100)
+            m.setVelocity(w)
+            if i % 2 == 0:
+                tau_z += k * w**2
+            else:
+                tau_z -= k * w**2
 
-            for i, m in enumerate(motors):
-                w = clamp(cmd[i], 0, 100)
-                m.setVelocity(w)
+        vel = node.getVelocity()
+        wz = vel[5]
+        alpha_z = tau_z / Izz
+        new_wz = wz + alpha_z * dt
+        node.setVelocity([vel[0], vel[1], vel[2], vel[3], vel[4], new_wz])
 
-                # yaw torque contribution
-                if i % 2 == 0:   # m1, m3
-                    tau_z += k * w**2
-                else:            # m2, m4
-                    tau_z -= k * w**2
+    # =========================
+    # CAMERA CAPTURE (OPTIMIZED FOR MOTION)
+    # =========================
+    frame_count += 1
+    if frame_count % frame_skip == 0:
+        try:
+            image = camera.getImage()
+            if image:
+                img_np = np.frombuffer(image, dtype=np.uint8).reshape((cam_height, cam_width, 4))
+                color_img = img_np[:, :, :3] 
 
-            # apply yaw dynamics
-            vel = node.getVelocity()
-            wz = vel[5]
+                # INCREASE QUALITY: 95 provides near-lossless color for moving parts
+                _, buffer = cv2.imencode('.jpg', color_img, [int(cv2.IMWRITE_JPEG_QUALITY), 95])
 
-            alpha_z = tau_z / Izz
-            new_wz = wz + alpha_z * dt
+                img_b64 = base64.b64encode(buffer).decode('utf-8')
+                cam_packet = {
+                    "w": cam_width,
+                    "h": cam_height,
+                    "img": img_b64
+                }
+                sock_tx.sendto(json.dumps(cam_packet).encode(), (UDP_IP, 9004))
 
-            node.setVelocity([
-                vel[0], vel[1], vel[2],
-                vel[3], vel[4], new_wz
-            ])
+        except Exception as e:
+            print(f"Camera TX error: {e}")
 
-    except BlockingIOError:
-        pass
-    except Exception as e:
-        print("RX error:", e)
-
-    # ---- SEND TELEMETRY ----
+    # =========================
+    # SEND TELEMETRY
+    # =========================
     try:
         telemetry = get_telemetry()
-
-        # unpack
-        x, y, z, vx, vy, vz, r, p, yaw, wx, wy, wz = telemetry
-
-        # format (zero small values)
-        x, y, z   = fmt(x), fmt(y), fmt(z)
-        vx, vy, vz = fmt(vx), fmt(vy), fmt(vz)
-        r, p, yaw = fmt(r), fmt(p), fmt(yaw)
-        wx, wy, wz = fmt(wx), fmt(wy), fmt(wz)
-
-        # 🔥 single-line clean print
-        print(
-            f"x:{x:.2f} | y:{y:.2f} | z:{z:.2f} | "
-            f"vx:{vx:.2f} | vy:{vy:.2f} | vz:{vz:.2f} | "
-            f"r:{r:.2f} | p:{p:.2f} | yaw:{yaw:.2f} | "
-            f"wx:{wx:.2f} | wy:{wy:.2f} | wz:{wz:.2f}"
-        )
-
-        # still send over UDP
         msg = json.dumps(telemetry)
         sock_tx.sendto(msg.encode(), (UDP_IP, 9002))
-
     except Exception as e:
-        print("TX error:", e)
+        print(f"Telemetry TX error: {e}")
